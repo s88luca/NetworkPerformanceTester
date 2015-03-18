@@ -12,8 +12,17 @@ hosts_server=(
 	)
 
 
+download_server=(
+	'ftp.de.debian.org/debian/ls-lR.gz'
+	'ftp.fr.debian.org/debian/ls-lR.gz'
+	'ftp.it.debian.org/debian/ls-lR.gz'
+	'ftp.nl.debian.org/debian/ls-lR.gz'
+	'ftp.uk.debian.org/debian/ls-lR.gz'
+	)
+
+
 # Number of ping test
-ping_count=50
+ping_count=20
 
 
 # Save file log
@@ -66,4 +75,21 @@ for server in ${hosts_server[@]}; do
 	echo | tee -a $log_file
 	echo "Server:" ${server} | tee -a $log_file
 	mtr -rnc ${ping_count} ${server} | tee -a $log_file
+done
+
+
+for site in ${download_server[@]}; do
+
+	echo | tee -a $log_file
+
+	http_download_speed=$(curl -w '%{speed_download}' -m 15 -s -o /dev/null "http://${site}")
+	http_download_speed=${http_download_speed/,/.}
+	http_download_speed=$(echo "scale=2; ($http_download_speed*8)/(1000*1000)" | bc)
+	echo -e "Download HTTP da http://${site} :\t" $http_download_speed "Mbps" | tee -a $log_file
+
+	ftp_download_speed=$(curl -w '%{speed_download}' -m 15 -s -o /dev/null "ftp://${site}")
+	ftp_download_speed=${ftp_download_speed/,/.}
+	ftp_download_speed=$(echo "scale=2; ($ftp_download_speed*8)/(1000*1000)" | bc)
+	echo -e "Download FTP  da ftp://${site}  :\t" $ftp_download_speed "Mbps" | tee -a $log_file
+
 done
